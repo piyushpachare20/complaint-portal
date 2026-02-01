@@ -124,11 +124,11 @@ See `Deployment-Checklist` file for detailed steps.
 
 ## 📝 License
 
-Private - Ambarnath Municipal Corporation
+Private - Aurangabad Municipal Corporation
 
 ## 👤 Author
 
-Developed for Ambarnath, Maharashtra Pilot Program
+Developed for Aurangabad, Maharashtra Pilot Program
 
 ---
 
