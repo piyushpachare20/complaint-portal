@@ -1,0 +1,652 @@
+# ComplaintPortal: Production Deployment Checklist
+**Status:** Pre-Launch Ready  
+**Target Go-Live:** Week 4 of Implementation  
+
+---
+
+## ✅ PHASE 1: PRE-DEVELOPMENT SETUP (Days 1-2)
+
+### Environment Setup
+- [ ] Node.js v18+ installed (`node --version`)
+- [ ] npm 9+ installed (`npm --version`)
+- [ ] Git configured (`git config --global user.name` / `user.email`)
+- [ ] GitHub account created and SSH keys configured
+- [ ] Supabase account created
+- [ ] Vercel account created (linked to GitHub)
+- [ ] VSCode or preferred IDE installed
+
+### Project Initialization
+- [ ] Next.js project created with TypeScript
+- [ ] Dependencies installed (Supabase, validation, UI libraries)
+- [ ] Tailwind CSS configured
+- [ ] Git repository initialized and first commit made
+- [ ] `.env.example` created (no secrets)
+- [ ] `.gitignore` updated to exclude `.env.local`
+
+---
+
+## ✅ PHASE 2: SUPABASE SETUP (Days 2-3)
+
+### Supabase Project Creation
+- [ ] New project created (`complaint-portal-pilot`)
+- [ ] Project URL saved (NEXT_PUBLIC_SUPABASE_URL)
+- [ ] Anon Key saved (NEXT_PUBLIC_SUPABASE_ANON_KEY)
+- [ ] Service Role Key saved securely (SUPABASE_SERVICE_ROLE_KEY)
+- [ ] `.env.local` populated with credentials
+
+### Database Schema
+- [ ] `users` table created with RLS policies
+- [ ] `wards` table created
+- [ ] `grievances` table created with indexes
+- [ ] `status_updates` table created for audit trail
+- [ ] All foreign keys configured correctly
+- [ ] RLS policies verified:
+  - [ ] Citizens see only own grievances
+  - [ ] Nagarasevakas see ward-specific grievances
+  - [ ] Public ward data readable
+- [ ] Sample data inserted (5 wards, 3 test users)
+
+### Storage Setup
+- [ ] `grievances` bucket created
+- [ ] Storage RLS policies configured
+- [ ] Public URL access verified for images
+
+---
+
+## ✅ PHASE 3: AUTHENTICATION IMPLEMENTATION (Days 3-4)
+
+### Auth Setup
+- [ ] Supabase Auth initialized in app
+- [ ] Auth client created (`lib/supabase/client.ts`)
+- [ ] Server-side auth client created (`lib/supabase/server.ts`)
+- [ ] Session management implemented
+- [ ] Middleware created for route protection
+
+### Login/Signup Pages
+- [ ] Login form component created
+- [ ] Signup form component created
+- [ ] Form validation schemas created (Zod)
+- [ ] Error messages displayed properly
+- [ ] Redirect after login working
+- [ ] "Remember me" functionality (optional)
+- [ ] Password reset link sent (optional)
+
+### Role-Based Access
+- [ ] User profile table synced with Auth
+- [ ] Role assignment working (citizen/nagarasevaka)
+- [ ] Dashboard routing based on role
+- [ ] Unauthorized access blocked (middleware)
+
+---
+
+## ✅ PHASE 4: COMPLAINT SUBMISSION (Days 4-5)
+
+### Complaint Form
+- [ ] Form component created with fields:
+  - [ ] Title (required)
+  - [ ] Description (required)
+  - [ ] Category dropdown (6 options)
+  - [ ] Photo upload (optional, max 5MB)
+  - [ ] Location (optional latitude/longitude)
+- [ ] Form validation working (client-side)
+- [ ] File upload validation:
+  - [ ] File size check (≤ 5MB)
+  - [ ] File type check (only images)
+  - [ ] File validation on server-side
+- [ ] Success/error toast notifications
+
+### Photo Upload
+- [ ] Upload component created
+- [ ] Preview before submission working
+- [ ] File stored in Supabase Storage
+- [ ] Public URL generated and saved to database
+- [ ] Image optimization implemented (Next/Image)
+
+### API Routes
+- [ ] `/api/complaints` POST endpoint created
+- [ ] Input validation using Zod schemas
+- [ ] Authentication check before creation
+- [ ] Ward auto-assignment logic
+- [ ] File upload to storage
+- [ ] Response with created complaint ID
+- [ ] Error handling and logging
+
+---
+
+## ✅ PHASE 5: COMPLAINT TRACKING (Days 5-6)
+
+### Citizen View
+- [ ] "My Complaints" page lists all user's complaints
+- [ ] Pagination or infinite scroll implemented
+- [ ] Sorting by date, status
+- [ ] Filter by status (open/in_progress/resolved)
+- [ ] Click to view complaint detail
+- [ ] Display complaint status with badge
+- [ ] Show status update history
+- [ ] Empty state when no complaints
+
+### Detail Page
+- [ ] Full complaint information displayed
+- [ ] Photo displayed with proper sizing
+- [ ] Status timeline/history shown
+- [ ] Nagarasevaka's remarks visible
+- [ ] Resolution date shown if resolved
+- [ ] Share complaint link functionality (optional)
+- [ ] Mobile responsive layout
+
+### API Routes
+- [ ] `/api/complaints` GET endpoint (user's complaints)
+- [ ] `/api/complaints/[id]` GET endpoint (single complaint)
+- [ ] RLS policies enforcing user can only see own
+
+---
+
+## ✅ PHASE 6: NAGARASEVAKA DASHBOARD (Days 6-7)
+
+### Dashboard Overview
+- [ ] Dashboard accessible only to nagarasevakas
+- [ ] Shows statistics:
+  - [ ] Total complaints
+  - [ ] Open complaints
+  - [ ] In progress count
+  - [ ] Resolved count
+  - [ ] Average resolution time
+- [ ] Ward filter (nagarasevaka sees only their ward)
+- [ ] Last 7 days chart or summary
+
+### Complaints List
+- [ ] Table/list of ward complaints
+- [ ] Sortable columns (date, status, title)
+- [ ] Filter by status
+- [ ] Quick action buttons (view, update status)
+- [ ] Bulk operations (optional)
+- [ ] Search by title or ID
+
+### Status Update
+- [ ] Modal/form to update complaint status
+- [ ] Status dropdown (open → in_progress → resolved)
+- [ ] Resolution remarks text field
+- [ ] Save updates to database
+- [ ] Status update logged in audit trail
+- [ ] Citizen notified of update (future: SMS/WhatsApp)
+
+### API Routes
+- [ ] `/api/complaints` GET endpoint (ward complaints)
+- [ ] `/api/complaints/[id]` PUT endpoint (update status)
+- [ ] `/api/complaints/[id]` GET endpoint (full details)
+- [ ] RLS policies for nagarasevaka ward access
+
+---
+
+## ✅ PHASE 7: LANGUAGE SUPPORT (Day 7)
+
+### English/Marathi Toggle
+- [ ] Language switcher component created
+- [ ] Placed in navbar
+- [ ] Toggle switches between EN and मराठी
+- [ ] Language preference saved to localStorage
+- [ ] Persists across page refreshes
+- [ ] All UI text translated:
+  - [ ] Form labels
+  - [ ] Button text
+  - [ ] Success/error messages
+  - [ ] Page titles
+  - [ ] Navigation items
+
+### Internationalization (i18n) Setup
+- [ ] Translation system implemented (simple i18n)
+- [ ] All strings in `lib/i18n/en.ts` and `lib/i18n/mr.ts`
+- [ ] No hardcoded English text in components
+- [ ] Forms work in both languages
+- [ ] Database doesn't store language (user preference only)
+
+---
+
+## ✅ PHASE 8: UI/UX POLISH (Days 7-8)
+
+### Design System Implementation
+- [ ] Tailwind classes follow design system
+- [ ] Colors match spec (#EA580C primary, grays)
+- [ ] Typography follows scale (H1-H6, body, captions)
+- [ ] Spacing consistent (4px base unit)
+- [ ] Border radius (8px, 12px, 999px)
+- [ ] Status badges (open=amber, in_progress=blue, resolved=green)
+- [ ] Icons from Lucide (20px default size)
+
+### Responsive Design
+- [ ] Desktop (1280px): Full layout
+- [ ] Tablet (768px): Optimized layout
+- [ ] Mobile (375px): Stacked layout
+- [ ] Touch targets: 44px minimum
+- [ ] No horizontal scroll
+- [ ] Forms mobile-friendly (16px input to prevent zoom)
+
+### Accessibility (WCAG AA)
+- [ ] Color contrast: 4.5:1 for normal text
+- [ ] All images have alt text
+- [ ] Form labels properly associated
+- [ ] Focus states visible (2px outline)
+- [ ] Keyboard navigation working
+- [ ] Skip to main content link (optional)
+- [ ] Screen reader tested (optional)
+
+### Error Handling
+- [ ] Error boundary component created
+- [ ] Toast notifications for errors
+- [ ] User-friendly error messages
+- [ ] Error logging (optional: Sentry)
+- [ ] 404/500 error pages created
+- [ ] Network error handling
+
+---
+
+## ✅ PHASE 9: SECURITY & VALIDATION (Day 8)
+
+### Input Validation
+- [ ] Form validation schemas (Zod)
+- [ ] Server-side validation (never trust client)
+- [ ] File type validation (MIME type check)
+- [ ] File size limits enforced (5MB)
+- [ ] Text length limits enforced
+- [ ] Email format validation
+- [ ] SQL injection prevention (Supabase handles)
+
+### Authentication Security
+- [ ] Passwords hashed by Supabase
+- [ ] Session tokens secure (HttpOnly cookies)
+- [ ] CSRF protection (Next.js default)
+- [ ] XSS protection (React escapes by default)
+- [ ] User can only edit own profile
+- [ ] User can only view own complaints
+
+### Authorization (RLS)
+- [ ] Row Level Security enabled on all tables
+- [ ] Citizens can't see others' complaints
+- [ ] Nagarasevakas can't see other wards
+- [ ] Admins don't exist yet (future)
+- [ ] RLS policies tested thoroughly
+
+### API Security
+- [ ] Rate limiting implemented (optional: for future)
+- [ ] API authentication required
+- [ ] Only authenticated users can access `/api/complaints`
+- [ ] Environment variables not exposed (checked)
+- [ ] Service role key never sent to client
+- [ ] CORS headers configured
+
+---
+
+## ✅ PHASE 10: TESTING (Days 8-9)
+
+### Manual Testing - Citizen Flow
+- [ ] Sign up new account
+- [ ] Receive confirmation email
+- [ ] Email verification link works
+- [ ] Login with credentials
+- [ ] Submit complaint with all fields
+- [ ] Submit complaint with photo
+- [ ] View submitted complaint
+- [ ] View list of all complaints
+- [ ] Filter complaints by status
+- [ ] Logout successfully
+- [ ] Mobile layout works on real phone
+
+### Manual Testing - Nagarasevaka Flow
+- [ ] Login as nagarasevaka
+- [ ] Redirect to dashboard
+- [ ] See only own ward complaints
+- [ ] Click on complaint to view details
+- [ ] Update complaint status
+- [ ] Add resolution remarks
+- [ ] See status update history
+- [ ] Logout successfully
+
+### Manual Testing - Security
+- [ ] Can't access `/dashboard` without auth
+- [ ] Can't access other user's complaints
+- [ ] Can't edit other user's complaints
+- [ ] Can't upload malicious files
+- [ ] Can't submit empty forms
+- [ ] Can't bypass client-side validation
+
+### Performance Testing
+- [ ] Build time < 30 seconds
+- [ ] Bundle size < 500KB (gzipped)
+- [ ] First paint < 1.5 seconds
+- [ ] Largest Contentful Paint (LCP) < 2.5 seconds
+- [ ] Images lazy-loaded
+- [ ] No unnecessary re-renders
+
+### Browser Testing
+- [ ] Chrome (latest)
+- [ ] Safari (latest)
+- [ ] Firefox (latest)
+- [ ] Edge (latest)
+- [ ] Mobile Chrome
+- [ ] Mobile Safari
+
+### Device Testing
+- [ ] iPhone (375px, 390px)
+- [ ] Android (375px, 412px)
+- [ ] iPad (768px)
+- [ ] Desktop (1280px+)
+
+---
+
+## ✅ PHASE 11: DOCUMENTATION (Day 9)
+
+### README.md
+- [ ] Project overview written
+- [ ] Tech stack listed
+- [ ] Installation instructions clear
+- [ ] Environment variables documented
+- [ ] Local development steps
+- [ ] Build and deploy commands
+- [ ] Troubleshooting section
+
+### Code Documentation
+- [ ] Complex functions documented with JSDoc
+- [ ] API route endpoints documented
+- [ ] Database schema commented
+- [ ] Component props documented (TypeScript)
+- [ ] Utility functions explained
+
+### Deployment Guide
+- [ ] Step-by-step Vercel deployment
+- [ ] Environment variables setup
+- [ ] Custom domain configuration
+- [ ] Monitoring setup instructions
+- [ ] Rollback procedures
+
+### User Guide (Optional)
+- [ ] Screenshots of each page
+- [ ] Step-by-step citizen workflow
+- [ ] Step-by-step nagarasevaka workflow
+- [ ] FAQ section
+- [ ] Contact/support information
+
+---
+
+## ✅ PHASE 12: PRE-DEPLOYMENT VERIFICATION (Day 10)
+
+### Code Quality
+- [ ] No console.error or console.warn in production
+- [ ] No console.log left in code
+- [ ] No `any` types used (strict TypeScript)
+- [ ] No TODO comments remaining
+- [ ] ESLint passes: `npm run lint`
+- [ ] TypeScript compilation succeeds: `npm run build`
+- [ ] No unused imports or variables
+
+### Environment Setup
+- [ ] `.env.local` created with all credentials
+- [ ] `.env.local` in `.gitignore`
+- [ ] `.env.example` updated with variable names
+- [ ] No secrets in code comments
+- [ ] No secrets in commit history
+
+### Git Repository
+- [ ] All changes committed
+- [ ] No uncommitted changes
+- [ ] Git history clean and meaningful
+- [ ] `.gitignore` properly configured:
+  - [ ] `node_modules/`
+  - [ ] `.env.local`
+  - [ ] `.next/`
+  - [ ] `.env*.local`
+  - [ ] `dist/`
+
+### Build Verification
+- [ ] Local build succeeds: `npm run build`
+- [ ] Local build can start: `npm run start`
+- [ ] No build warnings
+- [ ] All API routes working
+- [ ] Database queries working
+- [ ] File uploads working
+
+### Final Checklist
+- [ ] All features implemented
+- [ ] All tests passing
+- [ ] No known bugs
+- [ ] Performance acceptable
+- [ ] Mobile responsive
+- [ ] Accessibility standards met
+- [ ] Documentation complete
+- [ ] Ready for deployment
+
+---
+
+## ✅ PHASE 13: VERCEL DEPLOYMENT (Day 11)
+
+### GitHub Setup
+- [ ] Repository created on GitHub
+- [ ] All code pushed to main branch
+- [ ] Branch protection rules (optional):
+  - [ ] Require PR reviews
+  - [ ] Require status checks to pass
+
+### Vercel Connection
+- [ ] Vercel account connected to GitHub
+- [ ] Project imported to Vercel
+- [ ] Framework detected: Next.js ✓
+- [ ] Build command verified: `npm run build`
+- [ ] Output directory verified: `.next`
+
+### Environment Variables in Vercel
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` added
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` added
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` added as secret
+- [ ] Variables set for all environments:
+  - [ ] Production
+  - [ ] Preview (same as production for now)
+  - [ ] Development
+
+### Initial Deployment
+- [ ] Click "Deploy" in Vercel
+- [ ] Build logs reviewed for errors
+- [ ] Deployment completes successfully
+- [ ] Vercel domain assigned (e.g., complaint-portal-abc123.vercel.app)
+
+### Post-Deployment Testing
+- [ ] Website loads at Vercel URL
+- [ ] Login page displays correctly
+- [ ] Can create account
+- [ ] Can submit complaint
+- [ ] Can upload photo
+- [ ] Can view complaint
+- [ ] Dashboard works
+- [ ] No console errors in browser DevTools
+- [ ] Mobile responsive on real devices
+
+### Custom Domain Setup (Optional)
+- [ ] Domain purchased (.in domain recommended)
+- [ ] Domain added to Vercel project
+- [ ] Nameservers updated at registrar
+- [ ] DNS records configured
+- [ ] SSL certificate provisioned automatically
+- [ ] HTTPS working on custom domain
+- [ ] Domain propagated (wait 24-48 hours)
+
+---
+
+## ✅ PHASE 14: MONITORING & OPTIMIZATION (Day 12)
+
+### Vercel Analytics
+- [ ] Web Analytics enabled
+- [ ] Speed Insights enabled
+- [ ] Events tracked (page views, conversions)
+- [ ] Performance dashboard monitored
+
+### Supabase Monitoring
+- [ ] Database usage checked
+- [ ] Storage usage checked
+- [ ] Auth logs reviewed
+- [ ] No unusual queries
+- [ ] Connection pool healthy
+
+### Error Tracking (Optional Future)
+- [ ] Sentry account created (optional)
+- [ ] Error tracking configured
+- [ ] Alerts set up for critical errors
+
+### Performance Optimization
+- [ ] Images optimized with Next/Image
+- [ ] JavaScript bundle analyzed
+- [ ] Unused CSS removed (Tailwind purges automatically)
+- [ ] Database queries optimized
+- [ ] API response times checked
+
+---
+
+## ✅ PHASE 15: PRODUCTION LAUNCH (Day 13)
+
+### Final Checks
+- [ ] All systems operational
+- [ ] No known critical bugs
+- [ ] Performance acceptable
+- [ ] Security verified
+- [ ] Documentation complete
+- [ ] Support plan in place
+
+### Go-Live Actions
+- [ ] Announce launch (optional)
+- [ ] Monitor first 24 hours closely
+- [ ] Watch error logs
+- [ ] Monitor user registrations
+- [ ] Response time checks
+- [ ] User feedback collection
+
+### Ongoing Monitoring
+- [ ] Daily error log checks (first week)
+- [ ] Weekly performance reviews
+- [ ] Monitor Vercel analytics
+- [ ] Respond to user issues
+- [ ] Document any bugs found
+
+---
+
+## ✅ PHASE 16: POST-LAUNCH (Week 2+)
+
+### Immediate Actions
+- [ ] Collect pilot feedback
+- [ ] Document user issues
+- [ ] Monitor system performance
+- [ ] Fix critical bugs immediately
+- [ ] Plan first update
+
+### First Update (1 week post-launch)
+- [ ] Address any critical bugs
+- [ ] Performance optimizations
+- [ ] UX improvements based on feedback
+- [ ] Documentation updates
+- [ ] Deploy update to Vercel
+
+### Ongoing Maintenance
+- [ ] Weekly dependency check
+- [ ] Monthly security updates
+- [ ] Performance monitoring
+- [ ] Feature requests collection
+- [ ] Plan Phase 2 features
+
+---
+
+## 🔴 CRITICAL ISSUES TO WATCH FOR
+
+### Security Issues (Must Fix Before Launch)
+- [ ] ❌ Service role key exposed in client
+- [ ] ❌ RLS policies not working
+- [ ] ❌ Anyone can edit others' complaints
+- [ ] ❌ Secrets committed to git
+- [ ] ❌ No authentication on API routes
+
+### Functionality Issues (Must Fix Before Launch)
+- [ ] ❌ Can't submit complaints
+- [ ] ❌ Photos not uploading
+- [ ] ❌ Dashboard not loading
+- [ ] ❌ Login not working
+- [ ] ❌ Can't view complaints
+
+### Performance Issues (Fix if Possible)
+- [ ] ⚠️ Page load > 3 seconds
+- [ ] ⚠️ Bundle size > 500KB
+- [ ] ⚠️ Images not optimized
+- [ ] ⚠️ Database queries slow
+
+### Mobile Issues (Must Fix Before Launch)
+- [ ] ❌ Not responsive at 375px
+- [ ] ❌ Touch targets < 44px
+- [ ] ❌ Horizontal scroll present
+- [ ] ❌ Inputs zoom on focus (iOS)
+
+---
+
+## 📊 SUCCESS METRICS TO TRACK
+
+After launch, monitor these metrics:
+
+| Metric | Target | Check |
+|--------|--------|-------|
+| System Uptime | > 99.5% | ✅ Vercel dashboard |
+| Page Load Time | < 2s | ✅ Vercel Speed Insights |
+| Error Rate | < 1% | ✅ Error logs |
+| User Registrations | 10+ week 1 | ✅ Supabase Auth logs |
+| Complaints Submitted | 20+ week 1 | ✅ Database count |
+| Mobile Users | > 60% | ✅ Vercel Analytics |
+| User Satisfaction | 4+ / 5 stars | ✅ Feedback collection |
+
+---
+
+## 🆘 TROUBLESHOOTING QUICK REFERENCE
+
+### "Deployment Failed" on Vercel
+1. Check build logs in Vercel dashboard
+2. Check environment variables are set
+3. Verify Node version compatible (18+)
+4. Run `npm run build` locally to reproduce
+
+### "Authentication Fails"
+1. Check Supabase credentials in .env.local
+2. Verify RLS policies enabled
+3. Check database users table has data
+4. Clear browser cookies and retry
+
+### "Can't Upload Photos"
+1. Check storage bucket exists
+2. Check storage RLS policies configured
+3. Verify file size < 5MB
+4. Check file type is image (JPEG/PNG)
+5. Check storage quota not exceeded
+
+### "Slow Performance"
+1. Enable image optimization (Next/Image)
+2. Check bundle size with `npm run build`
+3. Optimize database queries (add indexes)
+4. Enable Vercel caching headers
+5. Consider Vercel Pro tier
+
+### "RLS Not Working"
+1. Verify RLS policies created correctly
+2. Check policy conditions use auth.uid()
+3. Test policies in Supabase SQL editor
+4. Verify user role in database
+5. Clear session and retry login
+
+---
+
+## 📞 SUPPORT CONTACTS
+
+- **Supabase Support:** [docs.supabase.com](https://docs.supabase.com) or Dashboard Support
+- **Vercel Support:** [vercel.com/support](https://vercel.com/support)
+- **Next.js Community:** [GitHub Discussions](https://github.com/vercel/next.js/discussions)
+- **Emergency:** Check status pages:
+  - Supabase: https://status.supabase.com
+  - Vercel: https://www.vercel-status.com
+
+---
+
+**Deployment Status:** ✅ Ready to Launch  
+**Last Updated:** January 23, 2026  
+**Estimated Time to Deployment:** 13-14 days from start  
+**Go-Live Target:** 4 weeks from initialization
+
+🚀 **Ready to deploy!**

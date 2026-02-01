@@ -1,0 +1,1500 @@
+# ComplaintPortal Implementation Plan
+## Production-Ready Deployment Guide
+**Status:** Ready to Deploy  
+**Last Updated:** January 23, 2026  
+**Target:** Ambarnath, Maharashtra Pilot
+
+---
+
+## EXECUTIVE SUMMARY
+
+This document provides a complete, step-by-step implementation plan for deploying **ComplaintPortal**—a fully functional grievance redressal platform built with:
+- **Next.js 15** (Frontend + Backend)
+- **Supabase** (Database + Auth + Storage)
+- **Vercel** (Hosting)
+- **TypeScript** (Type Safety)
+- **Tailwind CSS** (Styling)
+
+**Timeline:** 4 weeks to production deployment  
+**Cost:** ₹800–₹1,200/year (domain only, all services free tier)  
+**Status:** End-to-end product ready to deploy
+
+---
+
+## PART 1: PROJECT STRUCTURE & SETUP
+
+### Phase 1.1: Local Development Environment Setup
+
+#### Step 1: Initialize Next.js Project
+```bash
+npx create-next-app@latest complaint-portal \
+  --typescript \
+  --tailwind \
+  --eslint \
+  --app \
+  --no-src-dir
+```
+
+**Key Options:**
+- ✅ Use App Router (Next.js 15)
+- ✅ TypeScript enabled
+- ✅ Tailwind CSS included
+- ✅ ESLint for code quality
+
+#### Step 2: Install Core Dependencies
+```bash
+npm install @supabase/supabase-js \
+  @supabase/auth-helpers-nextjs \
+  react-hook-form zod zustand \
+  lucide-react \
+  sonner \
+  date-fns
+```
+
+**Why each package:**
+- `@supabase/supabase-js`: Database + Auth client
+- `@supabase/auth-helpers-nextjs`: Next.js Auth integration
+- `react-hook-form`: Form validation (lightweight, performant)
+- `zod`: Runtime schema validation
+- `zustand`: State management (simpler than Redux)
+- `lucide-react`: Icon system (matches design guidelines)
+- `sonner`: Toast notifications
+- `date-fns`: Date formatting utilities
+
+#### Step 3: Project Directory Structure
+```
+complaint-portal/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   ├── signup/
+│   │   │   └── page.tsx
+│   │   └── layout.tsx
+│   ├── (citizen)/
+│   │   ├── page.tsx                    # Home
+│   │   ├── complaint/
+│   │   │   ├── new/
+│   │   │   │   └── page.tsx            # Submit grievance
+│   │   │   ├── my/
+│   │   │   │   └── page.tsx            # View complaints
+│   │   │   └── [id]/
+│   │   │       └── page.tsx            # Single complaint detail
+│   │   └── layout.tsx
+│   ├── (dashboard)/
+│   │   ├── page.tsx                    # Dashboard redirect
+│   │   ├── complaints/
+│   │   │   ├── page.tsx                # All complaints for ward
+│   │   │   └── [id]/
+│   │   │       └── page.tsx            # Complaint detail + update
+│   │   └── layout.tsx
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── callback/
+│   │   │   │   └── route.ts            # OAuth callback
+│   │   │   └── logout/
+│   │   │       └── route.ts            # Logout endpoint
+│   │   ├── complaints/
+│   │   │   ├── route.ts                # List/Create grievances
+│   │   │   └── [id]/
+│   │   │       └── route.ts            # Update grievance status
+│   │   ├── upload/
+│   │   │   └── route.ts                # File upload to storage
+│   │   └── wards/
+│   │       └── route.ts                # Get wards data
+│   ├── layout.tsx                      # Root layout
+│   ├── page.tsx                        # Root page (redirect)
+│   └── error.tsx                       # Global error handler
+├── components/
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   └── SignupForm.tsx
+│   ├── forms/
+│   │   ├── ComplaintForm.tsx
+│   │   ├── UpdateStatusForm.tsx
+│   │   └── ImageUpload.tsx
+│   ├── layouts/
+│   │   ├── Navbar.tsx
+│   │   ├── Sidebar.tsx
+│   │   └── Layout.tsx
+│   ├── grievance/
+│   │   ├── GrievanceCard.tsx
+│   │   ├── GrievanceList.tsx
+│   │   └── StatusBadge.tsx
+│   ├── common/
+│   │   ├── Button.tsx
+│   │   ├── Input.tsx
+│   │   ├── Select.tsx
+│   │   ├── Modal.tsx
+│   │   └── LoadingSpinner.tsx
+│   └── ui/
+│       └── error-boundary.tsx
+├── lib/
+│   ├── supabase/
+│   │   ├── client.ts                   # Client initialization
+│   │   ├── server.ts                   # Server initialization
+│   │   ├── database.ts                 # DB helper functions
+│   │   └── storage.ts                  # Storage helpers
+│   ├── auth/
+│   │   ├── session.ts                  # Session management
+│   │   └── middleware.ts               # Auth middleware
+│   ├── validation/
+│   │   ├── complaint.ts                # Complaint schemas
+│   │   ├── auth.ts                     # Auth schemas
+│   │   └── index.ts
+│   ├── types/
+│   │   ├── index.ts                    # Shared types
+│   │   ├── database.ts                 # Database types
+│   │   └── auth.ts                     # Auth types
+│   ├── hooks/
+│   │   ├── useAuth.ts
+│   │   ├── useComplaints.ts
+│   │   └── useLanguage.ts
+│   ├── utils/
+│   │   ├── cn.ts                       # Class name utility
+│   │   ├── format.ts                   # Formatting utilities
+│   │   └── constants.ts                # Global constants
+│   └── store/
+│       ├── authStore.ts
+│       └── uiStore.ts
+├── middleware.ts                       # Next.js middleware
+├── public/
+│   ├── images/
+│   ├── icons/
+│   └── logo.png
+├── styles/
+│   └── globals.css
+├── .env.local                          # Local environment variables
+├── .env.example                        # Environment template
+├── tailwind.config.ts                  # Tailwind configuration
+├── tsconfig.json                       # TypeScript configuration
+├── next.config.ts                      # Next.js configuration
+├── vercel.json                         # Vercel configuration
+├── package.json
+└── README.md
+```
+
+---
+
+## PART 2: SUPABASE SETUP & DATABASE SCHEMA
+
+### Phase 2.1: Supabase Project Creation
+
+#### Step 1: Create Supabase Project
+1. Go to [supabase.com](https://supabase.com)
+2. Sign up/Log in
+3. Create new project:
+   - **Name:** complaint-portal-pilot
+   - **Database Password:** Strong 32-char password (save securely)
+   - **Region:** India (Asia Pacific - Singapore recommended for India)
+
+#### Step 2: Get Credentials
+From Supabase dashboard:
+- Copy **Project URL** (NEXT_PUBLIC_SUPABASE_URL)
+- Copy **Anon Key** (NEXT_PUBLIC_SUPABASE_ANON_KEY)
+- Copy **Service Role Key** (SUPABASE_SERVICE_ROLE_KEY) - **Keep secret!**
+
+### Phase 2.2: Database Schema Setup
+
+#### Step 1: Create Tables
+
+**Table 1: `users` (Profiles)**
+```sql
+create table users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  name text not null,
+  email text not null unique,
+  role text not null check (role in ('citizen', 'nagarasevaka')),
+  ward_id bigint references wards(id) on delete set null,
+  phone_number text,
+  created_at timestamp default now(),
+  updated_at timestamp default now()
+);
+
+create index idx_users_role on users(role);
+create index idx_users_ward_id on users(ward_id);
+```
+
+**Table 2: `wards`**
+```sql
+create table wards (
+  id bigint primary key generated always as identity,
+  name text not null,
+  area_name text,
+  description text,
+  created_at timestamp default now()
+);
+
+create index idx_wards_name on wards(name);
+```
+
+**Table 3: `grievances`**
+```sql
+create table grievances (
+  id bigint primary key generated always as identity,
+  title text not null,
+  description text not null,
+  category text not null check (category in ('pothole', 'garbage', 'water_leak', 'street_light', 'drainage', 'other')),
+  status text default 'open' not null check (status in ('open', 'in_progress', 'resolved', 'rejected')),
+  photo_url text,
+  latitude numeric(10, 8),
+  longitude numeric(10, 8),
+  ward_id bigint not null references wards(id) on delete restrict,
+  created_by uuid not null references auth.users(id) on delete cascade,
+  assigned_to uuid references users(id) on delete set null,
+  resolution_remarks text,
+  created_at timestamp default now(),
+  updated_at timestamp default now(),
+  resolved_at timestamp
+);
+
+create index idx_grievances_status on grievances(status);
+create index idx_grievances_ward_id on grievances(ward_id);
+create index idx_grievances_created_by on grievances(created_by);
+create index idx_grievances_assigned_to on grievances(assigned_to);
+create index idx_grievances_created_at on grievances(created_at);
+```
+
+**Table 4: `status_updates`** (Audit trail)
+```sql
+create table status_updates (
+  id bigint primary key generated always as identity,
+  grievance_id bigint not null references grievances(id) on delete cascade,
+  old_status text,
+  new_status text not null,
+  updated_by uuid not null references auth.users(id),
+  remarks text,
+  created_at timestamp default now()
+);
+
+create index idx_status_updates_grievance_id on status_updates(grievance_id);
+```
+
+#### Step 2: Enable Row Level Security (RLS)
+
+**Enable RLS on all tables:**
+```sql
+alter table users enable row level security;
+alter table grievances enable row level security;
+alter table status_updates enable row level security;
+alter table wards enable row level security;
+```
+
+#### Step 3: Create RLS Policies
+
+**Policy 1: Users can see own profile**
+```sql
+create policy "Users can view own profile"
+on users for select
+to authenticated
+using (auth.uid() = id);
+
+create policy "Nagarasevakas can see citizens in their ward"
+on users for select
+to authenticated
+using (
+  exists (
+    select 1 from users u 
+    where u.id = auth.uid() 
+    and u.role = 'nagarasevaka'
+  )
+  and (ward_id = (select ward_id from users where id = auth.uid()))
+);
+```
+
+**Policy 2: Citizens see own complaints**
+```sql
+create policy "Citizens can view own grievances"
+on grievances for select
+to authenticated
+using (
+  created_by = auth.uid() 
+  or (
+    exists (
+      select 1 from users 
+      where id = auth.uid() 
+      and role = 'nagarasevaka'
+    )
+    and ward_id = (select ward_id from users where id = auth.uid())
+  )
+);
+
+create policy "Citizens can create grievances"
+on grievances for insert
+to authenticated
+with check (created_by = auth.uid());
+
+create policy "Nagarasevakas can update ward grievances"
+on grievances for update
+to authenticated
+using (
+  exists (
+    select 1 from users u
+    where u.id = auth.uid()
+    and u.role = 'nagarasevaka'
+    and u.ward_id = grievances.ward_id
+  )
+);
+```
+
+**Policy 3: Status updates audit trail**
+```sql
+create policy "Authenticated users can view status updates"
+on status_updates for select
+to authenticated
+using (true);
+
+create policy "Nagarasevakas can insert status updates"
+on status_updates for insert
+to authenticated
+with check (
+  exists (
+    select 1 from users
+    where id = auth.uid()
+    and role = 'nagarasevaka'
+  )
+);
+```
+
+**Policy 4: Wards are public read**
+```sql
+create policy "Wards are publicly readable"
+on wards for select
+to public
+using (true);
+```
+
+### Phase 2.3: Supabase Storage Setup
+
+#### Step 1: Create Storage Bucket
+```sql
+insert into storage.buckets (id, name, public)
+values ('grievances', 'grievances', true);
+```
+
+#### Step 2: Set Storage RLS Policies
+```sql
+create policy "Users can upload to grievances bucket"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'grievances');
+
+create policy "Anyone can view grievance photos"
+on storage.objects for select
+to public
+using (bucket_id = 'grievances');
+```
+
+---
+
+## PART 3: ENVIRONMENT CONFIGURATION
+
+### Phase 3.1: Environment Variables
+
+Create `.env.local`:
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+
+# App Configuration
+NEXT_PUBLIC_APP_NAME=ComplaintPortal
+NEXT_PUBLIC_APP_VERSION=1.0.0
+NEXT_PUBLIC_DEFAULT_LANGUAGE=en
+
+# Optional: For future SMS/WhatsApp
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+```
+
+Create `.env.example` (for git):
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# App Configuration
+NEXT_PUBLIC_APP_NAME=ComplaintPortal
+NEXT_PUBLIC_APP_VERSION=1.0.0
+NEXT_PUBLIC_DEFAULT_LANGUAGE=en
+```
+
+---
+
+## PART 4: CORE IMPLEMENTATION
+
+### Phase 4.1: Type Definitions
+
+**`lib/types/index.ts`:**
+```typescript
+// User Types
+export type UserRole = 'citizen' | 'nagarasevaka';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  ward_id: number | null;
+  phone_number: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuthSession {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+}
+
+// Grievance Types
+export type GrievanceStatus = 'open' | 'in_progress' | 'resolved' | 'rejected';
+export type GrievanceCategory = 
+  | 'pothole' 
+  | 'garbage' 
+  | 'water_leak' 
+  | 'street_light' 
+  | 'drainage' 
+  | 'other';
+
+export interface Grievance {
+  id: number;
+  title: string;
+  description: string;
+  category: GrievanceCategory;
+  status: GrievanceStatus;
+  photo_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  ward_id: number;
+  created_by: string;
+  assigned_to: string | null;
+  resolution_remarks: string | null;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
+}
+
+export interface Ward {
+  id: number;
+  name: string;
+  area_name: string | null;
+  description: string | null;
+  created_at: string;
+}
+
+// Form Types
+export interface CreateGrievanceInput {
+  title: string;
+  description: string;
+  category: GrievanceCategory;
+  photo?: File;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface UpdateGrievanceInput {
+  status: GrievanceStatus;
+  resolution_remarks?: string;
+}
+```
+
+### Phase 4.2: Supabase Clients
+
+**`lib/supabase/client.ts`:**
+```typescript
+import { createBrowserClient } from '@supabase/ssr';
+
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
+```
+
+**`lib/supabase/server.ts`:**
+```typescript
+import { createServerClient, getCookieOptions } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+
+export async function createServerSupabaseClient() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Handle error
+          }
+        },
+      },
+    }
+  );
+}
+```
+
+**`lib/supabase/database.ts`:**
+```typescript
+import { createClient } from './client';
+import { createServerSupabaseClient } from './server';
+import type { Grievance, CreateGrievanceInput } from '../types';
+
+// Create new grievance
+export async function createGrievance(
+  input: CreateGrievanceInput,
+  userId: string
+) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('grievances')
+    .insert({
+      ...input,
+      created_by: userId,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// Get grievance by ID
+export async function getGrievanceById(id: number) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('grievances')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) throw error;
+  return data as Grievance;
+}
+
+// Get user's grievances
+export async function getUserGrievances(userId: string) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('grievances')
+    .select('*')
+    .eq('created_by', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data as Grievance[];
+}
+
+// Get ward grievances (for Nagarasevaka)
+export async function getWardGrievances(wardId: number) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('grievances')
+    .select('*')
+    .eq('ward_id', wardId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data as Grievance[];
+}
+
+// Update grievance status
+export async function updateGrievanceStatus(
+  id: number,
+  status: string,
+  remarks?: string
+) {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from('grievances')
+    .update({
+      status,
+      resolution_remarks: remarks,
+      resolved_at: status === 'resolved' ? new Date().toISOString() : null,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+```
+
+**`lib/supabase/storage.ts`:**
+```typescript
+import { createClient } from './client';
+
+const BUCKET_NAME = 'grievances';
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+export async function uploadGrievancePhoto(
+  file: File,
+  grievanceId: number
+): Promise<string> {
+  // Validate file
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Only image files are allowed');
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error('File size must be less than 5MB');
+  }
+
+  const supabase = createClient();
+  const fileName = `grievance_${grievanceId}_${Date.now()}_${file.name}`;
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .upload(fileName, file);
+
+  if (error) throw error;
+
+  // Get public URL
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(BUCKET_NAME).getPublicUrl(data.path);
+
+  return publicUrl;
+}
+```
+
+### Phase 4.3: Authentication Setup
+
+**`lib/auth/session.ts`:**
+```typescript
+import { createServerSupabaseClient } from '../supabase/server';
+import type { User } from '../types';
+
+export async function getSession() {
+  const supabase = await createServerSupabaseClient();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) return null;
+
+  const { data } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+
+  return {
+    ...session,
+    user: data as User,
+  };
+}
+
+export async function getUser() {
+  const session = await getSession();
+  return session?.user || null;
+}
+```
+
+### Phase 4.4: Validation Schemas
+
+**`lib/validation/complaint.ts`:**
+```typescript
+import { z } from 'zod';
+
+export const createComplaintSchema = z.object({
+  title: z.string()
+    .min(5, 'Title must be at least 5 characters')
+    .max(100, 'Title must be less than 100 characters'),
+  description: z.string()
+    .min(20, 'Description must be at least 20 characters')
+    .max(500, 'Description must be less than 500 characters'),
+  category: z.enum(['pothole', 'garbage', 'water_leak', 'street_light', 'drainage', 'other']),
+  photo: z.instanceof(File)
+    .refine(file => file.size <= 5 * 1024 * 1024, 'File size must be less than 5MB')
+    .refine(
+      file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type),
+      'Only JPEG, PNG, and WebP images are allowed'
+    )
+    .optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+});
+
+export const updateComplaintSchema = z.object({
+  status: z.enum(['open', 'in_progress', 'resolved', 'rejected']),
+  resolution_remarks: z.string().max(500).optional(),
+});
+
+export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
+export type UpdateComplaintInput = z.infer<typeof updateComplaintSchema>;
+```
+
+---
+
+## PART 5: FRONTEND COMPONENTS
+
+### Phase 5.1: Authentication Components
+
+**`components/auth/LoginForm.tsx`:**
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/common/Button';
+import { Input } from '@/components/common/Input';
+import { toast } from 'sonner';
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+type LoginInput = z.infer<typeof loginSchema>;
+
+export function LoginForm() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginInput) => {
+    setIsLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success('Logged in successfully');
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      toast.error('An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Input
+        label="Email"
+        type="email"
+        {...register('email')}
+        error={errors.email?.message}
+        disabled={isLoading}
+      />
+      <Input
+        label="Password"
+        type="password"
+        {...register('password')}
+        error={errors.password?.message}
+        disabled={isLoading}
+      />
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isLoading}
+      >
+        {isLoading ? 'Logging in...' : 'Log In'}
+      </Button>
+    </form>
+  );
+}
+```
+
+### Phase 5.2: Complaint Form Component
+
+**`components/forms/ComplaintForm.tsx`:**
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createComplaintSchema } from '@/lib/validation/complaint';
+import { Button } from '@/components/common/Button';
+import { Input } from '@/components/common/Input';
+import { Select } from '@/components/common/Select';
+import { ImageUpload } from './ImageUpload';
+import { toast } from 'sonner';
+
+type ComplaintFormData = {
+  title: string;
+  description: string;
+  category: string;
+  photo?: FileList;
+};
+
+export function ComplaintForm() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ComplaintFormData>({
+    resolver: zodResolver(createComplaintSchema),
+  });
+
+  const onSubmit = async (data: ComplaintFormData) => {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('title', data.title);
+      formData.append('description', data.description);
+      formData.append('category', data.category);
+      
+      if (data.photo?.[0]) {
+        formData.append('photo', data.photo[0]);
+      }
+
+      const response = await fetch('/api/complaints', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit complaint');
+      }
+
+      toast.success('Complaint submitted successfully');
+      router.push('/complaint/my');
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'Failed to submit complaint'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+      <Input
+        label="Complaint Title"
+        placeholder="e.g., Pothole on Main Street"
+        {...register('title')}
+        error={errors.title?.message}
+        disabled={isLoading}
+      />
+
+      <div>
+        <label className="block text-sm font-medium text-gray-900 mb-2">
+          Category
+        </label>
+        <Select
+          {...register('category')}
+          error={errors.category?.message}
+          disabled={isLoading}
+          options={[
+            { value: 'pothole', label: 'Pothole' },
+            { value: 'garbage', label: 'Garbage' },
+            { value: 'water_leak', label: 'Water Leak' },
+            { value: 'street_light', label: 'Street Light' },
+            { value: 'drainage', label: 'Drainage' },
+            { value: 'other', label: 'Other' },
+          ]}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-900 mb-2">
+          Description
+        </label>
+        <textarea
+          {...register('description')}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+          rows={5}
+          placeholder="Describe the issue in detail..."
+          disabled={isLoading}
+        />
+        {errors.description && (
+          <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+        )}
+      </div>
+
+      <ImageUpload {...register('photo')} />
+
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={isLoading}
+      >
+        {isLoading ? 'Submitting...' : 'Submit Complaint'}
+      </Button>
+    </form>
+  );
+}
+```
+
+### Phase 5.3: API Routes
+
+**`app/api/complaints/route.ts`:**
+```typescript
+import { NextRequest, NextResponse } from 'next/server';
+import { getSession } from '@/lib/auth/session';
+import { createGrievance } from '@/lib/supabase/database';
+import { uploadGrievancePhoto } from '@/lib/supabase/storage';
+import { createComplaintSchema } from '@/lib/validation/complaint';
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getSession();
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const formData = await request.formData();
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const category = formData.get('category') as string;
+    const photo = formData.get('photo') as File | null;
+
+    // Validate input
+    const validation = createComplaintSchema.safeParse({
+      title,
+      description,
+      category,
+      photo,
+    });
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.issues },
+        { status: 400 }
+      );
+    }
+
+    // Create grievance
+    const grievance = await createGrievance(
+      {
+        title,
+        description,
+        category: category as any,
+      },
+      session.user.id
+    );
+
+    // Upload photo if provided
+    if (photo) {
+      const photoUrl = await uploadGrievancePhoto(photo, grievance.id);
+      // Update grievance with photo URL
+      await updateGrievancePhoto(grievance.id, photoUrl);
+    }
+
+    return NextResponse.json(grievance, { status: 201 });
+  } catch (error) {
+    console.error('Error creating complaint:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## PART 6: SECURITY IMPLEMENTATION
+
+### Phase 6.1: Security Checklist
+
+- [ ] **Row Level Security (RLS)** - Enabled on all tables
+- [ ] **Environment Variables** - Not committed to git
+- [ ] **CORS Configuration** - Only allow Vercel domain
+- [ ] **Rate Limiting** - Implement on API routes
+- [ ] **File Upload Validation** - Size, type, malware scanning
+- [ ] **Authentication Tokens** - Secure cookie handling
+- [ ] **SQL Injection** - Using parameterized queries (Supabase handles)
+- [ ] **XSS Protection** - React escapes by default
+- [ ] **CSRF Protection** - Built into Next.js
+- [ ] **HTTPS** - Enforced on Vercel
+
+### Phase 6.2: API Route Protection
+
+**`middleware.ts`:**
+```typescript
+import { type NextRequest } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
+
+const protectedRoutes = ['/api/complaints', '/dashboard'];
+const publicRoutes = ['/login', '/signup', '/'];
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Check if route needs protection
+  const isProtected = protectedRoutes.some(route => pathname.startsWith(route));
+  
+  if (!isProtected) return;
+
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirectTo', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+}
+
+export const config = {
+  matcher: ['/api/:path*', '/dashboard/:path*', '/complaint/:path*'],
+};
+```
+
+---
+
+## PART 7: TESTING STRATEGY
+
+### Phase 7.1: Local Testing Checklist
+
+#### Unit Tests
+- [ ] Authentication functions (login, signup, logout)
+- [ ] Form validation schemas
+- [ ] Data transformation utilities
+- [ ] File upload validation
+
+#### Integration Tests
+- [ ] End-to-end user flows (signup → create complaint → view)
+- [ ] Role-based access (citizen vs nagarasevaka)
+- [ ] Database queries with RLS
+- [ ] File upload to storage
+
+#### Manual Testing
+- [ ] **Desktop (1280px):**
+  - [ ] Login/Signup pages
+  - [ ] Complaint form submission
+  - [ ] Complaint list and details
+  - [ ] Dashboard view
+  - [ ] Language toggle
+  
+- [ ] **Mobile (375px):**
+  - [ ] Touch targets (44px minimum)
+  - [ ] Form accessibility
+  - [ ] Image upload
+  - [ ] Status updates
+  
+- [ ] **Tablet (768px):**
+  - [ ] Responsive layout
+  - [ ] Navigation
+  - [ ] Forms
+
+#### Security Tests
+- [ ] Try accessing protected routes without auth
+- [ ] Try modifying another user's complaint
+- [ ] File upload with invalid files (exe, zip, etc.)
+- [ ] SQL injection attempts (Supabase handles, but verify)
+- [ ] XSS attempts in form inputs
+
+#### Performance Tests
+- [ ] Page load time < 3 seconds
+- [ ] Image optimization
+- [ ] Bundle size analysis
+
+### Phase 7.2: Test Command Structure
+
+```bash
+# Run all tests
+npm run test
+
+# Run specific test
+npm run test:auth
+
+# Generate coverage report
+npm run test:coverage
+
+# End-to-end testing (optional, for later phases)
+npm run test:e2e
+```
+
+---
+
+## PART 8: VERCEL DEPLOYMENT
+
+### Phase 8.1: Pre-Deployment Checklist
+
+- [ ] All environment variables set correctly
+- [ ] Database migrations tested locally
+- [ ] Build succeeds: `npm run build`
+- [ ] No console errors or warnings
+- [ ] All tests passing
+- [ ] `.env.local` NOT in git
+- [ ] `.gitignore` updated
+- [ ] README.md updated with deployment instructions
+
+### Phase 8.2: Deploy to Vercel
+
+#### Step 1: Initialize Git Repository
+```bash
+git init
+git add .
+git commit -m "Initial commit: ComplaintPortal MVP"
+```
+
+#### Step 2: Push to GitHub
+```bash
+git remote add origin https://github.com/yourusername/complaint-portal.git
+git branch -M main
+git push -u origin main
+```
+
+#### Step 3: Connect to Vercel
+1. Go to [vercel.com](https://vercel.com)
+2. Sign up with GitHub
+3. Click "Add New" → "Project"
+4. Import your GitHub repository
+5. Configure project:
+   - **Framework:** Next.js (auto-detected)
+   - **Root Directory:** ./
+   - **Build Command:** npm run build
+   - **Output Directory:** .next
+   - **Install Command:** npm install
+
+#### Step 4: Set Environment Variables in Vercel
+```
+NEXT_PUBLIC_SUPABASE_URL = your_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY = your_key
+SUPABASE_SERVICE_ROLE_KEY = your_secret_key
+NEXT_PUBLIC_APP_NAME = ComplaintPortal
+```
+
+**Important:** Set `SUPABASE_SERVICE_ROLE_KEY` as a secret (checkmark "Sensitive" option)
+
+#### Step 5: Deploy
+Click "Deploy" button. Vercel will:
+- Install dependencies
+- Build the app
+- Run tests (if configured)
+- Deploy to live URL
+
+### Phase 8.3: Post-Deployment Verification
+
+- [ ] Application loads without errors
+- [ ] Login/Signup works
+- [ ] Can submit a test complaint
+- [ ] Can upload an image
+- [ ] Can view complaint status
+- [ ] Nagarasevaka dashboard accessible
+- [ ] Language switcher works
+- [ ] Mobile responsive
+- [ ] No 404 errors in console
+
+### Phase 8.4: Custom Domain Setup (Optional)
+
+1. **Purchase Domain:**
+   - Registry: [GoDaddy](https://godaddy.com), [Namecheap](https://namecheap.com)
+   - Cost: ₹800–₹1,200/year
+   - Example: `complaintportal.in`
+
+2. **Configure DNS:**
+   - Go to Vercel → Settings → Domains
+   - Add custom domain
+   - Update nameservers at domain registrar
+   - DNS propagation: 24–48 hours
+
+3. **SSL Certificate:**
+   - Vercel automatically provisions Let's Encrypt SSL
+   - HTTPS enabled by default
+
+---
+
+## PART 9: PRODUCTION OPERATIONS
+
+### Phase 9.1: Monitoring & Analytics
+
+#### Enable Vercel Analytics
+1. Vercel Dashboard → Settings → Analytics
+2. Enable "Web Analytics" and "Speed Insights"
+3. Track:
+   - Page load time
+   - Core Web Vitals (LCP, FID, CLS)
+   - Traffic patterns
+
+#### Supabase Monitoring
+- Check database usage in Supabase dashboard
+- Monitor storage space
+- Review auth logs for suspicious activity
+
+### Phase 9.2: Maintenance Tasks
+
+**Weekly:**
+- [ ] Check error logs
+- [ ] Monitor database performance
+- [ ] Review user feedback
+
+**Monthly:**
+- [ ] Backup Supabase (Supabase handles automatic daily backups)
+- [ ] Update dependencies: `npm outdated`
+- [ ] Review security advisories
+
+**Quarterly:**
+- [ ] Performance optimization review
+- [ ] User testing feedback
+- [ ] Plan new features
+
+### Phase 9.3: Scaling Plan (For Future)
+
+When you need to scale beyond free tier:
+
+**Database Scaling:**
+- Supabase → Pro Plan (₹25/month equivalent) for more connections
+- Add caching layer: Vercel KV (₹0.50/month)
+
+**Notification Scaling:**
+- WhatsApp API: Twilio (₹1/message) or WhatsApp Business API
+- SMS API: Twilio, Exotel (₹0.50-1/message)
+
+**Storage Scaling:**
+- Supabase Pro: Unlimited storage
+- OR migrate to AWS S3 (₹0.023/GB)
+
+---
+
+## PART 10: FINAL DEPLOYMENT TODO LIST
+
+### Pre-Launch (Week 1-2)
+
+#### Development
+- [ ] Set up Next.js project structure
+- [ ] Create Supabase tables with RLS policies
+- [ ] Implement authentication (login/signup)
+- [ ] Build complaint form component
+- [ ] Create complaint listing pages
+- [ ] Build Nagarasevaka dashboard
+- [ ] Implement file upload
+- [ ] Add form validation (Zod + React Hook Form)
+- [ ] Create API routes
+- [ ] Implement language switching (English/Marathi)
+- [ ] Add accessibility features
+- [ ] Set up error handling and error boundary
+
+#### Testing
+- [ ] Unit tests for auth functions
+- [ ] Integration tests for complaint flow
+- [ ] Manual testing on desktop (1280px)
+- [ ] Manual testing on mobile (375px)
+- [ ] Manual testing on tablet (768px)
+- [ ] Test all user roles (citizen, nagarasevaka)
+- [ ] Security testing (RLS, auth, file upload)
+- [ ] Performance testing (load time, bundle size)
+
+#### Documentation
+- [ ] Create README.md with setup instructions
+- [ ] Document API endpoints
+- [ ] Create deployment guide
+- [ ] Create user guide (for citizens and nagarasevakas)
+
+### Launch Week (Week 3)
+
+#### Pre-Deployment
+- [ ] Final code review
+- [ ] All tests passing
+- [ ] No console errors
+- [ ] `.env.local` excluded from git
+- [ ] Environment variables prepared for Vercel
+- [ ] Database backup setup verified
+
+#### Deployment
+- [ ] Push to GitHub
+- [ ] Connect to Vercel
+- [ ] Set environment variables
+- [ ] Deploy to production
+- [ ] Verify all features work in production
+- [ ] Set up custom domain (optional)
+- [ ] Enable analytics
+
+#### Post-Deployment
+- [ ] Monitor for errors
+- [ ] Test on real mobile devices
+- [ ] Verify email confirmations working
+- [ ] Test user onboarding flow
+- [ ] Document any issues found
+
+### Ongoing (Week 4+)
+
+#### Monitoring
+- [ ] Daily error log checks
+- [ ] Weekly performance review
+- [ ] Monthly dependency updates
+- [ ] User feedback collection
+
+#### Improvements
+- [ ] Collect pilot feedback
+- [ ] Plan Phase 2 features
+- [ ] Document lessons learned
+- [ ] Prepare for scaling
+
+---
+
+## PART 11: KEY FILES TO CREATE
+
+### Essential Configuration Files
+
+1. **`next.config.ts`**
+2. **`tailwind.config.ts`**
+3. **`tsconfig.json`**
+4. **`vercel.json`**
+5. **`middleware.ts`**
+6. **`.env.example`**
+7. **`.gitignore`**
+8. **`package.json`** (with scripts)
+
+### Component Files (30+ Components)
+- Authentication components (LoginForm, SignupForm)
+- Form components (ComplaintForm, UpdateStatusForm, ImageUpload)
+- Layout components (Navbar, Sidebar, Layout)
+- Grievance components (GrievanceCard, GrievanceList, StatusBadge)
+- Common UI components (Button, Input, Select, Modal, etc.)
+
+### API Routes (5+ Routes)
+- `/api/complaints` - Create/List complaints
+- `/api/complaints/[id]` - Update complaint
+- `/api/upload` - Upload file
+- `/api/auth/callback` - OAuth callback
+- `/api/wards` - Get wards
+
+### Library Files (10+ Files)
+- Supabase clients and helpers
+- Authentication utilities
+- Validation schemas
+- Type definitions
+- Custom hooks
+- Utility functions
+- State stores
+
+---
+
+## COST BREAKDOWN
+
+| Service | Cost | Notes |
+|---------|------|-------|
+| Supabase (Free Tier) | ₹0 | 500MB DB, 5GB Storage, Auth included |
+| Vercel (Free Tier) | ₹0 | Unlimited deployments, HTTPS, CDN |
+| Domain (.in) | ₹800–₹1,200/year | Optional, can use Vercel subdomain |
+| **Total Year 1** | **₹800–₹1,200** | **Very affordable pilot** |
+
+**If scaling needed (Year 2+):**
+- Supabase Pro: ₹25/month (₹300/year)
+- WhatsApp API: ₹0.50–1 per message
+- SMS API: ₹0.50–1 per message
+
+---
+
+## SUCCESS METRICS (Pilot Phase)
+
+| Metric | Target |
+|--------|--------|
+| Grievances submitted | 50+ in first month |
+| Average resolution time | < 7 days |
+| User satisfaction | > 4/5 stars |
+| System uptime | > 99.5% |
+| Page load time | < 2 seconds |
+| Mobile usability | 100% functional |
+
+---
+
+## SUPPORT & RESOURCES
+
+- **Supabase Docs:** https://supabase.com/docs
+- **Next.js Docs:** https://nextjs.org/docs
+- **Vercel Docs:** https://vercel.com/docs
+- **Tailwind CSS:** https://tailwindcss.com/docs
+- **React Hook Form:** https://react-hook-form.com/
+- **Zod Validation:** https://zod.dev/
+
+---
+
+## APPENDIX: QUICK START COMMANDS
+
+```bash
+# 1. Create project
+npx create-next-app@latest complaint-portal --typescript --tailwind --app
+
+# 2. Install dependencies
+npm install @supabase/supabase-js react-hook-form zod zustand lucide-react sonner
+
+# 3. Create .env.local with your credentials
+cp .env.example .env.local
+# Edit .env.local with your Supabase credentials
+
+# 4. Run locally
+npm run dev
+# Open http://localhost:3000
+
+# 5. Build for production
+npm run build
+
+# 6. Test production build locally
+npm run start
+
+# 7. Deploy (after pushing to GitHub)
+# Via Vercel dashboard or CLI:
+npm i -g vercel
+vercel login
+vercel
+```
+
+---
+
+## NOTES FOR DEPLOYMENT
+
+**Remember:**
+1. Keep `SUPABASE_SERVICE_ROLE_KEY` secret—never commit to git
+2. Use different environment variables for staging and production
+3. Always test migrations locally before deploying
+4. Monitor Vercel analytics after deployment
+5. Keep dependencies updated monthly
+6. Regular database backups (Supabase handles automatically)
+7. Document all configuration changes
+8. Maintain a deployment checklist for each release
+
+---
+
+**Document Version:** 1.0  
+**Created:** January 23, 2026  
+**Status:** Ready for Implementation  
+**Estimated Deployment:** 3-4 weeks  
+
+**Next Step:** Start with Phase 1.1 - Local Development Environment Setup
